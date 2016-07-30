@@ -5,13 +5,23 @@ Program to search for sequnces in blast
 import argparse
 from Bio import SeqIO
 from Bio.SeqUtils.CheckSum import seguid
-#from progress.counter import Counter
+from progress.counter import Counter
 
 
-def is_inside(a, b):
-    if b.seq.find(a.seq) is not -1:
+def is_equal(a, b):
+    if seguid(a.seq) == seguid(b.seq):
         return True
     return False
+
+
+def get_deduplicated(records):
+    disp = Counter("Records processed:")
+    tested_record = records[0]
+    for record in records:
+        if not is_equal(tested_record, record):
+            yield tested_record
+            tested_record = record
+        disp.next()
 
 
 def main():
@@ -24,35 +34,17 @@ def main():
         dest='fastq_file',
         help='input')
 
-    '''
     parser.add_argument(
-        '--fastq-out-file',
+        '--fasta-out-file',
         type=str,
         required=True,
-        dest='fastq_output_file',
+        dest='fasta_output_file',
         help='output')
-    '''
 
     args = parser.parse_args()
     records = list(SeqIO.parse(args.fastq_file, 'fastq'))
-    records.sort(cmp=lambda x, y: cmp(len(x), len(y)))
-    result = dict()
-
-    while True:
-        tested_record = records[0]
-        counts = 0
-        leftover = list()
-        for record in records:
-            if is_inside(tested_record, record):
-                counts = counts + 1
-            else:
-                leftover.append(record)
-
-        records = leftover
-        print "Count for {}:{}".format(tested_record.seq, counts)
-
-        if len(leftover) is 0:
-            break
+    sorted_rec = sorted(records, key=lambda x: seguid(x.seq))
+    SeqIO.write(get_deduplicated(sorted_rec), args.fasta_output_file, 'fasta')
 
 if __name__ == "__main__":
     main()
