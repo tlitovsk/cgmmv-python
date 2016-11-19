@@ -23,9 +23,10 @@ def trim_adaptor(record, adaptor):
 def validate_quality(record, quality):
     """ Check the record for minimum quality value
     """
-    if record is not None:
-        if min(record.letter_annotations["phred_quality"]) >= quality:
-            return record
+    for i in range(len(record.seq)):
+        if record.letter_annotations["phred_quality"][i] < quality :
+            return record[:i]
+            
     return None
 
 
